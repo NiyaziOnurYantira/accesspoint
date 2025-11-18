@@ -1,8 +1,9 @@
-import express from 'express';
-import cors from 'cors';
-import { SERVER } from './config/config.js';
-import connectMongoDB from './database/mongoDBConnection.js';
-import accessPointRoutes from './routes/accessPointRoutes.js';
+import express from "express";
+import cors from "cors";
+import { SERVER } from "./config/config.js";
+import connectMongoDB from "./database/mongoDBConnection.js";
+import accessPointRoutes from "./routes/accessPointRoutes.js";
+import { v4 as uuidv4 } from "uuid"; // <-- EKLE
 
 const app = express();
 
@@ -13,10 +14,191 @@ app.use(express.json());
 connectMongoDB();
 
 // Önce API route'ları
-app.use('/api', accessPointRoutes);
+app.use("/api", accessPointRoutes);
+
+app.get("/new-access-point", (req, res) => {
+  const newId = uuidv4(); // Yeni eklenecek Access Point için id
+
+  res.send(`<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Yeni Access Point - ${newId}</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+
+      h1 {
+        margin-bottom: 10px;
+      }
+
+      table {
+        margin-top: 20px;
+        border-collapse: collapse;
+        min-width: 500px;
+      }
+
+      th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+      }
+
+      th {
+        background-color: #f2f2f2;
+        text-align: left;
+      }
+
+      input[type="text"] {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 6px;
+      }
+
+      .btn {
+        padding: 8px 14px;
+        border: none;
+        cursor: pointer;
+        border-radius: 4px;
+        margin-right: 8px;
+      }
+
+      .btn-primary {
+        background-color: #28a745;
+        color: white;
+      }
+
+      .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+      }
+
+      #message {
+        margin-top: 10px;
+      }
+
+      a {
+        color: #007bff;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Yeni Access Point Ekle</h1>
+    <p>Bu sayfada yeni bir Access Point oluşturacaksınız.</p>
+
+    <table>
+      <tbody>
+        <tr>
+          <th>ID</th>
+          <td><input type="text" id="id" value="${newId}" readonly /></td>
+        </tr>
+        <tr>
+          <th>MAC</th>
+          <td><input type="text" id="mac" /></td>
+        </tr>
+        <tr>
+          <th>Seri Numarası</th>
+          <td><input type="text" id="serialNumber" /></td>
+        </tr>
+        <tr>
+          <th>Üretim Yılı</th>
+          <td><input type="text" id="productionYear" /></td>
+        </tr>
+        <tr>
+          <th>Model</th>
+          <td><input type="text" id="model" /></td>
+        </tr>
+        <tr>
+          <th>Lokasyon</th>
+          <td><input type="text" id="location" /></td>
+        </tr>
+        <tr>
+          <th>Durum</th>
+          <td>
+            <input type="text" id="status" placeholder="active / inactive / faulty / maintenance" value="active" />
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="margin-top: 10px;">
+      <button class="btn btn-primary" id="btnSave">Kaydet</button>
+      <button class="btn btn-secondary" id="btnGotoDetail" disabled>Detay Sayfasına Git</button>
+    </div>
+
+    <div id="message"></div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        var inputId = document.getElementById("id");
+        var inputMac = document.getElementById("mac");
+        var inputSerial = document.getElementById("serialNumber");
+        var inputYear = document.getElementById("productionYear");
+        var inputModel = document.getElementById("model");
+        var inputLocation = document.getElementById("location");
+        var inputStatus = document.getElementById("status");
+        var messageDiv = document.getElementById("message");
+        var btnGotoDetail = document.getElementById("btnGotoDetail");
+
+        document.getElementById("btnSave").addEventListener("click", function () {
+          messageDiv.textContent = "";
+
+          var payload = {
+            id: inputId.value,
+            mac: inputMac.value,
+            serialNumber: inputSerial.value,
+            productionYear: inputYear.value,
+            model: inputModel.value,
+            location: inputLocation.value,
+            status: inputStatus.value || "active",
+          };
+
+          if (!payload.mac || !payload.serialNumber || !payload.productionYear || !payload.model || !payload.location) {
+            messageDiv.textContent = "MAC, Seri Numarası, Üretim Yılı, Model, Lokasyon zorunludur.";
+            return;
+          }
+
+          fetch("/api/access-points", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          })
+            .then(function (response) {
+              if (!response.ok) {
+                return response.json().then(function (data) {
+                  throw new Error(data.message || "Access Point oluşturulamadı.");
+                }).catch(function () {
+                  throw new Error("Access Point oluşturulamadı.");
+                });
+              }
+              return response.json();
+            })
+            .then(function (data) {
+              var ap = data.accessPoint;
+              messageDiv.innerHTML = "Access Point başarıyla oluşturuldu. ID: <strong>" + (ap && ap.id) + "</strong>";
+              btnGotoDetail.disabled = false;
+              btnGotoDetail.addEventListener("click", function () {
+                if (ap && ap.id) {
+                  window.open("/" + encodeURIComponent(ap.id), "_blank");
+                }
+              });
+            })
+            .catch(function (err) {
+              console.error(err);
+              messageDiv.textContent = err.message || "Bir hata oluştu.";
+            });
+        });
+      });
+    </script>
+  </body>
+</html>`);
+});
 
 // Sonra HTML sayfası: GET /:id
-app.get('/:id', (req, res) => {
+app.get("/:id", (req, res) => {
   const { id } = req.params;
 
   res.send(`<!DOCTYPE html>
@@ -62,11 +244,23 @@ app.get('/:id', (req, res) => {
       #qr-container img {
         max-width: 300px;
       }
+
+      .btn {
+        padding: 8px 14px;
+        border: none;
+        cursor: pointer;
+        border-radius: 4px;
+        margin-right: 8px;
+        background-color: #007bff;
+        color: white;
+      }
     </style>
   </head>
   <body>
     <h1>Access Point Detay</h1>
     <p><strong>ID:</strong> <span id="ap-id">${id}</span></p>
+
+    <button class="btn" id="btnNewAp">Yeni Access Point Ekle (Yeni Sekme)</button>
 
     <div id="error"></div>
 
@@ -135,6 +329,11 @@ app.get('/:id', (req, res) => {
         table.style.display = "none";
         qrContainer.style.display = "none";
 
+        // Yeni Access Point sayfasını yeni sekmede aç
+        document.getElementById("btnNewAp").addEventListener("click", function () {
+          window.open("/new-access-point", "_blank");
+        });
+
         if (!id) {
           errorDiv.textContent = "Geçerli bir Access Point ID bulunamadı.";
           return;
@@ -194,5 +393,5 @@ app.get('/:id', (req, res) => {
 
 // Sunucu
 app.listen(SERVER.PORT, () => {
-  console.log('API listening on ' + SERVER.PORT);
+  console.log("API listening on " + SERVER.PORT);
 });

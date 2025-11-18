@@ -1,19 +1,18 @@
 // src/routes/accessPointRoutes.js
 
-import express from 'express';
+import express from "express";
 import {
   createAccessPoint,
   getAccessPointById,
-} from '../controller/accessPointController.js';
+  updateAccessPoint, // <- eklendi
+} from "../controller/accessPointController.js";
 
 const router = express.Router();
 
-// Yeni Access Point oluşturma endpoint'i
-// POST /api/access-points
-router.post('/access-points', createAccessPoint);
+router.post("/access-points", createAccessPoint);
+router.get("/access-points/:id", getAccessPointById);
 
-// Belirli bir Access Point çekme endpoint'i
-// GET /api/access-points/:id
-router.get('/access-points/:id', getAccessPointById);
+// YENİ: Güncelleme endpoint'i
+router.put("/access-points/:id", updateAccessPoint);
 
 export default router;
