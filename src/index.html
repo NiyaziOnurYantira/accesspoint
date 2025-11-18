@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Access Point Detay</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+
+      h1 {
+        margin-bottom: 10px;
+      }
+
+      .form-group {
+        margin-bottom: 10px;
+      }
+
+      label {
+        display: inline-block;
+        width: 150px;
+      }
+
+      input[type='text'] {
+        padding: 5px;
+        width: 250px;
+      }
+
+      button {
+        padding: 6px 12px;
+        cursor: pointer;
+      }
+
+      table {
+        margin-top: 20px;
+        border-collapse: collapse;
+        min-width: 500px;
+      }
+
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 8px;
+      }
+
+      th {
+        background-color: #f2f2f2;
+        text-align: left;
+      }
+
+      #error {
+        color: red;
+        margin-top: 10px;
+      }
+
+      #qr-container {
+        margin-top: 20px;
+      }
+
+      #qr-container img {
+        max-width: 300px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Access Point Bilgisi</h1>
+
+    <div class="form-group">
+      <label for="apIdInput">Access Point ID:</label>
+      <input type="text" id="apIdInput" placeholder="UUID id gir" />
+      <button id="fetchBtn">Getir</button>
+    </div>
+
+    <div id="error"></div>
+
+    <table id="apTable" style="display: none">
+      <thead>
+        <tr>
+          <th>Alan</th>
+          <th>Değer</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>ID</td>
+          <td id="field-id"></td>
+        </tr>
+        <tr>
+          <td>MAC</td>
+          <td id="field-mac"></td>
+        </tr>
+        <tr>
+          <td>Seri Numarası</td>
+          <td id="field-serialNumber"></td>
+        </tr>
+        <tr>
+          <td>Üretim Yılı</td>
+          <td id="field-productionYear"></td>
+        </tr>
+        <tr>
+          <td>Model</td>
+          <td id="field-model"></td>
+        </tr>
+        <tr>
+          <td>Lokasyon</td>
+          <td id="field-location"></td>
+        </tr>
+        <tr>
+          <td>Durum</td>
+          <td id="field-status"></td>
+        </tr>
+        <tr>
+          <td>Oluşturulma Tarihi</td>
+          <td id="field-createdAt"></td>
+        </tr>
+        <tr>
+          <td>Güncellenme Tarihi</td>
+          <td id="field-updatedAt"></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div id="qr-container" style="display: none">
+      <h3>QR Kodu</h3>
+      <img id="qrImage" alt="Access Point QR Kod" />
+    </div>
+
+    <script>
+      const API_BASE_URL = 'http://localhost:3002/api';
+
+      document
+        .getElementById('fetchBtn')
+        .addEventListener('click', fetchAccessPoint);
+
+      async function fetchAccessPoint() {
+        const idInput = document.getElementById('apIdInput');
+        const id = idInput.value.trim();
+
+        const errorDiv = document.getElementById('error');
+        const table = document.getElementById('apTable');
+        const qrContainer = document.getElementById('qr-container');
+
+        errorDiv.textContent = '';
+        table.style.display = 'none';
+        qrContainer.style.display = 'none';
+
+        if (!id) {
+          errorDiv.textContent = 'Lütfen bir Access Point ID girin.';
+          return;
+        }
+
+        try {
+          const response = await fetch(
+            `${API_BASE_URL}/access-points/${encodeURIComponent(id)}`
+          );
+
+          if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            errorDiv.textContent =
+              data.message ||
+              `Bir hata oluştu. HTTP Status: ${response.status}`;
+            return;
+          }
+
+          const data = await response.json();
+          const ap = data.accessPoint;
+          const qrCode = data.qrCode;
+
+          if (!ap) {
+            errorDiv.textContent = 'Access Point verisi bulunamadı.';
+            return;
+          }
+
+          // Tablo alanlarını doldur
+          document.getElementById('field-id').textContent = ap.id || '';
+          document.getElementById('field-mac').textContent = ap.mac || '';
+          document.getElementById('field-serialNumber').textContent =
+            ap.serialNumber || '';
+          document.getElementById('field-productionYear').textContent =
+            ap.productionYear || '';
+          document.getElementById('field-model').textContent = ap.model || '';
+          document.getElementById('field-location').textContent =
+            ap.location || '';
+          document.getElementById('field-status').textContent = ap.status || '';
+          document.getElementById('field-createdAt').textContent = ap.createdAt
+            ? new Date(ap.createdAt).toLocaleString()
+            : '';
+          document.getElementById('field-updatedAt').textContent = ap.updatedAt
+            ? new Date(ap.updatedAt).toLocaleString()
+            : '';
+
+          table.style.display = 'table';
+
+          // QR kodu göster
+          if (qrCode) {
+            const qrImage = document.getElementById('qrImage');
+            qrImage.src = qrCode;
+            qrContainer.style.display = 'block';
+          }
+        } catch (err) {
+          console.error(err);
+          errorDiv.textContent = 'İstek yapılırken bir hata oluştu.';
+        }
+      }
+    </script>
+  </body>
+</html>

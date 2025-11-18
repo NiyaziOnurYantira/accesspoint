@@ -1,6 +1,6 @@
 // src/utils/qrCodeGenerator.js
 
-import QRCode from "qrcode";
+import QRCode from 'qrcode';
 
 /**
  * Verilen id için QR code üretir.
@@ -11,10 +11,10 @@ import QRCode from "qrcode";
  */
 export const generateAccessPointQr = async (id) => {
   if (!id) {
-    throw new Error("QR oluşturmak için geçerli bir id gerekli");
+    throw new Error('QR oluşturmak için geçerli bir id gerekli');
   }
 
-  const url = `http://localhost:3003/${id}`;
+  const url = `http://localhost:3002/${id}`;
 
   // İsterseniz ayarları özelleştirebilirsiniz
   const options = {
