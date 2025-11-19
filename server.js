@@ -1,9 +1,10 @@
-import express from "express";
-import cors from "cors";
-import { SERVER } from "./config/config.js";
-import connectMongoDB from "./database/mongoDBConnection.js";
-import accessPointRoutes from "./routes/accessPointRoutes.js";
-import { v4 as uuidv4 } from "uuid"; // <-- EKLE
+import express from 'express';
+import cors from 'cors';
+import { SERVER } from './src/config/config.js';
+import connectMongoDB from './src/database/mongoDBConnection.js';
+import accessPointRoutes from './src/routes/accessPointRoutes.js';
+import adminRoutes from './src/routes/adminRoutes.js';
+import { v4 as uuidv4 } from 'uuid'; // <-- EKLE
 
 const app = express();
 
@@ -14,12 +15,13 @@ app.use(express.json());
 connectMongoDB();
 
 // Önce API route'ları
-app.use("/api", accessPointRoutes);
+app.use('/api', accessPointRoutes);
+app.use('/api', adminRoutes);
 
-app.get("/new-access-point", (req, res) => {
-  const newId = uuidv4(); // Yeni eklenecek Access Point için id
+app.get('/new-access-point', (req, res) => {
+    const newId = uuidv4(); // Yeni eklenecek Access Point için id
 
-  res.send(`<!DOCTYPE html>
+    res.send(`<!DOCTYPE html>
 <html lang="tr">
   <head>
     <meta charset="UTF-8" />
@@ -122,6 +124,20 @@ app.get("/new-access-point", (req, res) => {
       </tbody>
     </table>
 
+    <h3 style="margin-top: 30px; color: #dc3545;">Admin Doğrulaması</h3>
+    <table style="margin-top: 10px;">
+      <tbody>
+        <tr>
+          <th>Admin Kullanıcı Adı</th>
+          <td><input type="text" id="adminUsername" placeholder="Admin kullanıcı adınız" /></td>
+        </tr>
+        <tr>
+          <th>Admin Şifre</th>
+          <td><input type="password" id="adminPassword" placeholder="Admin şifreniz" /></td>
+        </tr>
+      </tbody>
+    </table>
+
     <div style="margin-top: 10px;">
       <button class="btn btn-primary" id="btnSave">Kaydet</button>
       <button class="btn btn-secondary" id="btnGotoDetail" disabled>Detay Sayfasına Git</button>
@@ -138,6 +154,8 @@ app.get("/new-access-point", (req, res) => {
         var inputModel = document.getElementById("model");
         var inputLocation = document.getElementById("location");
         var inputStatus = document.getElementById("status");
+        var inputAdminUsername = document.getElementById("adminUsername");
+        var inputAdminPassword = document.getElementById("adminPassword");
         var messageDiv = document.getElementById("message");
         var btnGotoDetail = document.getElementById("btnGotoDetail");
 
@@ -152,6 +170,8 @@ app.get("/new-access-point", (req, res) => {
             model: inputModel.value,
             location: inputLocation.value,
             status: inputStatus.value || "active",
+            adminUsername: inputAdminUsername.value,
+            adminPassword: inputAdminPassword.value,
           };
 
           if (!payload.mac || !payload.serialNumber || !payload.productionYear || !payload.model || !payload.location) {
@@ -159,7 +179,12 @@ app.get("/new-access-point", (req, res) => {
             return;
           }
 
-          fetch("/api/access-points", {
+          if (!payload.adminUsername || !payload.adminPassword) {
+            messageDiv.textContent = "Admin kullanıcı adı ve şifresi zorunludur.";
+            return;
+          }
+
+          fetch("/api/admin/access-points", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -198,10 +223,10 @@ app.get("/new-access-point", (req, res) => {
 });
 
 // Sonra HTML sayfası: GET /:id
-app.get("/:id", (req, res) => {
-  const { id } = req.params;
+app.get('/:id', (req, res) => {
+    const { id } = req.params;
 
-  res.send(`<!DOCTYPE html>
+    res.send(`<!DOCTYPE html>
 <html lang="tr">
   <head>
     <meta charset="UTF-8" />
@@ -261,8 +286,12 @@ app.get("/:id", (req, res) => {
     <p><strong>ID:</strong> <span id="ap-id">${id}</span></p>
 
     <button class="btn" id="btnNewAp">Yeni Access Point Ekle (Yeni Sekme)</button>
+    <button class="btn" id="btnEditMode" style="display: none; background-color: #28a745;">Düzenleme Modunu Aç</button>
+    <button class="btn" id="btnSaveChanges" style="display: none; background-color: #ffc107; color: #000;">Değişiklikleri Kaydet</button>
+    <button class="btn" id="btnCancelEdit" style="display: none; background-color: #6c757d;">İptal</button>
 
     <div id="error"></div>
+    <div id="updateMessage" style="color: green; margin-top: 10px;"></div>
 
     <table id="apTable" style="display: none;">
       <thead>
@@ -311,6 +340,23 @@ app.get("/:id", (req, res) => {
       </tbody>
     </table>
 
+    <!-- Admin Doğrulaması Formu (Güncelleme için) -->
+    <div id="adminForm" style="display: none; margin-top: 30px; border: 2px solid #dc3545; padding: 20px; border-radius: 5px;">
+      <h3 style="color: #dc3545; margin-top: 0;">Admin Doğrulaması (Güncelleme İçin)</h3>
+      <table>
+        <tbody>
+          <tr>
+            <th>Admin Kullanıcı Adı</th>
+            <td><input type="text" id="updateAdminUsername" placeholder="Admin kullanıcı adınız" style="width: 100%; padding: 8px;" /></td>
+          </tr>
+          <tr>
+            <th>Admin Şifre</th>
+            <td><input type="password" id="updateAdminPassword" placeholder="Admin şifreniz" style="width: 100%; padding: 8px;" /></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
     <div id="qr-container" style="display: none;">
       <h3>QR Kodu</h3>
       <img id="qrImage" alt="Access Point QR Kod" />
@@ -329,10 +375,138 @@ app.get("/:id", (req, res) => {
         table.style.display = "none";
         qrContainer.style.display = "none";
 
+        var originalData = {}; // Orijinal verileri saklamak için
+        var isEditMode = false;
+
         // Yeni Access Point sayfasını yeni sekmede aç
         document.getElementById("btnNewAp").addEventListener("click", function () {
           window.open("/new-access-point", "_blank");
         });
+
+        // Düzenleme modunu aç
+        document.getElementById("btnEditMode").addEventListener("click", function () {
+          isEditMode = true;
+          enableEditMode();
+        });
+
+        // Değişiklikleri kaydet
+        document.getElementById("btnSaveChanges").addEventListener("click", function () {
+          saveChanges();
+        });
+
+        // Düzenlemeyi iptal et
+        document.getElementById("btnCancelEdit").addEventListener("click", function () {
+          isEditMode = false;
+          disableEditMode();
+          restoreOriginalData();
+        });
+
+        function enableEditMode() {
+          // Düzenlenebilir alanları input'a çevir
+          document.getElementById("field-mac").innerHTML = '<input type="text" id="edit-mac" value="' + originalData.mac + '" style="width: 100%; padding: 4px;" />';
+          document.getElementById("field-serialNumber").innerHTML = '<input type="text" id="edit-serialNumber" value="' + originalData.serialNumber + '" style="width: 100%; padding: 4px;" />';
+          document.getElementById("field-productionYear").innerHTML = '<input type="text" id="edit-productionYear" value="' + originalData.productionYear + '" style="width: 100%; padding: 4px;" />';
+          document.getElementById("field-model").innerHTML = '<input type="text" id="edit-model" value="' + originalData.model + '" style="width: 100%; padding: 4px;" />';
+          document.getElementById("field-location").innerHTML = '<input type="text" id="edit-location" value="' + originalData.location + '" style="width: 100%; padding: 4px;" />';
+          document.getElementById("field-status").innerHTML = '<select id="edit-status" style="width: 100%; padding: 4px;"><option value="active">active</option><option value="inactive">inactive</option><option value="faulty">faulty</option><option value="maintenance">maintenance</option></select>';
+          document.getElementById("edit-status").value = originalData.status;
+
+          // Butonları göster/gizle
+          document.getElementById("btnEditMode").style.display = "none";
+          document.getElementById("btnSaveChanges").style.display = "inline-block";
+          document.getElementById("btnCancelEdit").style.display = "inline-block";
+          document.getElementById("adminForm").style.display = "block";
+        }
+
+        function disableEditMode() {
+          // Input'ları geri text'e çevir
+          document.getElementById("field-mac").textContent = originalData.mac;
+          document.getElementById("field-serialNumber").textContent = originalData.serialNumber;
+          document.getElementById("field-productionYear").textContent = originalData.productionYear;
+          document.getElementById("field-model").textContent = originalData.model;
+          document.getElementById("field-location").textContent = originalData.location;
+          document.getElementById("field-status").textContent = originalData.status;
+
+          // Butonları göster/gizle
+          document.getElementById("btnEditMode").style.display = "inline-block";
+          document.getElementById("btnSaveChanges").style.display = "none";
+          document.getElementById("btnCancelEdit").style.display = "none";
+          document.getElementById("adminForm").style.display = "none";
+          
+          // Admin form alanlarını temizle
+          document.getElementById("updateAdminUsername").value = "";
+          document.getElementById("updateAdminPassword").value = "";
+          document.getElementById("updateMessage").textContent = "";
+        }
+
+        function restoreOriginalData() {
+          // Orijinal verileri geri yükle (herhangi bir değişiklik varsa)
+          // Bu fonksiyon gerekirse genişletilebilir
+        }
+
+        function saveChanges() {
+          var adminUsername = document.getElementById("updateAdminUsername").value;
+          var adminPassword = document.getElementById("updateAdminPassword").value;
+          var updateMessage = document.getElementById("updateMessage");
+          
+          updateMessage.textContent = "";
+          
+          if (!adminUsername || !adminPassword) {
+            updateMessage.textContent = "Admin kullanıcı adı ve şifresi zorunludur.";
+            updateMessage.style.color = "red";
+            return;
+          }
+
+          var updatePayload = {
+            mac: document.getElementById("edit-mac").value,
+            serialNumber: document.getElementById("edit-serialNumber").value,
+            productionYear: document.getElementById("edit-productionYear").value,
+            model: document.getElementById("edit-model").value,
+            location: document.getElementById("edit-location").value,
+            status: document.getElementById("edit-status").value,
+            adminUsername: adminUsername,
+            adminPassword: adminPassword,
+          };
+
+          fetch("/api/admin/access-points/" + encodeURIComponent(id), {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(updatePayload),
+          })
+            .then(function (response) {
+              if (!response.ok) {
+                return response.json().then(function (data) {
+                  throw new Error(data.message || "Access Point güncellenemedi.");
+                }).catch(function () {
+                  throw new Error("Access Point güncellenemedi.");
+                });
+              }
+              return response.json();
+            })
+            .then(function (data) {
+              updateMessage.textContent = "Access Point başarıyla güncellendi!";
+              updateMessage.style.color = "green";
+              
+              // Orijinal verileri güncelle
+              originalData = data.accessPoint;
+              
+              // Edit modundan çık
+              isEditMode = false;
+              disableEditMode();
+              
+              // Sayfayı yenile (verileri güncel göster)
+              setTimeout(function() {
+                location.reload();
+              }, 1500);
+            })
+            .catch(function (err) {
+              console.error(err);
+              updateMessage.textContent = err.message || "Güncelleme sırasında bir hata oluştu.";
+              updateMessage.style.color = "red";
+            });
+        }
 
         if (!id) {
           errorDiv.textContent = "Geçerli bir Access Point ID bulunamadı.";
@@ -373,7 +547,21 @@ app.get("/:id", (req, res) => {
               ? new Date(ap.updatedAt).toLocaleString()
               : "";
 
+            // Orijinal verileri sakla
+            originalData = {
+              id: ap.id || "",
+              mac: ap.mac || "",
+              serialNumber: ap.serialNumber || "",
+              productionYear: ap.productionYear || "",
+              model: ap.model || "",
+              location: ap.location || "",
+              status: ap.status || "",
+              createdAt: ap.createdAt,
+              updatedAt: ap.updatedAt
+            };
+
             table.style.display = "table";
+            document.getElementById("btnEditMode").style.display = "inline-block";
 
             if (qrCode) {
               var qrImage = document.getElementById("qrImage");
@@ -393,5 +581,5 @@ app.get("/:id", (req, res) => {
 
 // Sunucu
 app.listen(SERVER.PORT, () => {
-  console.log("API listening on " + SERVER.PORT);
+    console.log('API listening on ' + SERVER.PORT);
 });

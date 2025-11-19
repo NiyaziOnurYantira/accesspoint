@@ -4,13 +4,16 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "setup-admin": "node src/utils/setupAdmin.js",
+    "start": "node server.js"
   },
   "keywords": [],
   "author": "AyminaGundogdu",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "mongoose": "^8.20.0",
