@@ -12,7 +12,7 @@ export const createAccessPointWithAuth = async (req, res) => {
       id: bodyId,
       mac,
       serialNumber,
-      productionYear,
+      emergencyPhone,
       model,
       location,
       status,
@@ -25,7 +25,7 @@ export const createAccessPointWithAuth = async (req, res) => {
       id,
       mac,
       serialNumber,
-      productionYear,
+      emergencyPhone,
       model,
       location,
       status,
@@ -55,7 +55,7 @@ export const createAccessPoint = async (req, res) => {
       id: bodyId,
       mac,
       serialNumber,
-      productionYear,
+      emergencyPhone,
       model,
       location,
       status,
@@ -68,7 +68,7 @@ export const createAccessPoint = async (req, res) => {
       id,
       mac,
       serialNumber,
-      productionYear,
+      emergencyPhone,
       model,
       location,
       status,
@@ -133,7 +133,7 @@ export const updateAccessPointWithAuth = async (req, res) => {
       });
     }
 
-    const { mac, serialNumber, productionYear, model, location, status } =
+    const { mac, serialNumber, emergencyPhone, model, location, status } =
       req.body;
 
     const updatedAccessPoint = await AccessPoint.findOneAndUpdate(
@@ -141,7 +141,7 @@ export const updateAccessPointWithAuth = async (req, res) => {
       {
         mac,
         serialNumber,
-        productionYear,
+        emergencyPhone,
         model,
         location,
         status,
@@ -186,7 +186,7 @@ export const updateAccessPoint = async (req, res) => {
       });
     }
 
-    const { mac, serialNumber, productionYear, model, location, status } =
+    const { mac, serialNumber, emergencyPhone, model, location, status } =
       req.body;
 
     const updatedAccessPoint = await AccessPoint.findOneAndUpdate(
@@ -194,7 +194,7 @@ export const updateAccessPoint = async (req, res) => {
       {
         mac,
         serialNumber,
-        productionYear,
+        emergencyPhone,
         model,
         location,
         status,

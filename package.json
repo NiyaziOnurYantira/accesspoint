@@ -6,6 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "setup-admin": "node src/utils/setupAdmin.js",
+    "migrate": "node src/utils/migrateProductionYearToEmergencyPhone.js",
     "start": "node server.js"
   },
   "keywords": [],

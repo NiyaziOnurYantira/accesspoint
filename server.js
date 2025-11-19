@@ -104,8 +104,8 @@ app.get('/new-access-point', (req, res) => {
           <td><input type="text" id="serialNumber" /></td>
         </tr>
         <tr>
-          <th>Üretim Yılı</th>
-          <td><input type="text" id="productionYear" /></td>
+          <th>Arıza Durumunda Aranacak Numara</th>
+          <td><input type="tel" id="emergencyPhone" placeholder="+90 XXX XXX XX XX" /></td>
         </tr>
         <tr>
           <th>Model</th>
@@ -150,7 +150,7 @@ app.get('/new-access-point', (req, res) => {
         var inputId = document.getElementById("id");
         var inputMac = document.getElementById("mac");
         var inputSerial = document.getElementById("serialNumber");
-        var inputYear = document.getElementById("productionYear");
+        var inputEmergencyPhone = document.getElementById("emergencyPhone");
         var inputModel = document.getElementById("model");
         var inputLocation = document.getElementById("location");
         var inputStatus = document.getElementById("status");
@@ -166,7 +166,7 @@ app.get('/new-access-point', (req, res) => {
             id: inputId.value,
             mac: inputMac.value,
             serialNumber: inputSerial.value,
-            productionYear: inputYear.value,
+            emergencyPhone: inputEmergencyPhone.value,
             model: inputModel.value,
             location: inputLocation.value,
             status: inputStatus.value || "active",
@@ -174,8 +174,8 @@ app.get('/new-access-point', (req, res) => {
             adminPassword: inputAdminPassword.value,
           };
 
-          if (!payload.mac || !payload.serialNumber || !payload.productionYear || !payload.model || !payload.location) {
-            messageDiv.textContent = "MAC, Seri Numarası, Üretim Yılı, Model, Lokasyon zorunludur.";
+          if (!payload.mac || !payload.serialNumber || !payload.emergencyPhone || !payload.model || !payload.location) {
+            messageDiv.textContent = "MAC, Seri Numarası, Acil Durum Telefonu, Model, Lokasyon zorunludur.";
             return;
           }
 
@@ -314,8 +314,8 @@ app.get('/:id', (req, res) => {
           <td id="field-serialNumber"></td>
         </tr>
         <tr>
-          <td>Üretim Yılı</td>
-          <td id="field-productionYear"></td>
+          <td>Arıza Durumunda Aranacak Numara</td>
+          <td id="field-emergencyPhone"></td>
         </tr>
         <tr>
           <td>Model</td>
@@ -405,7 +405,7 @@ app.get('/:id', (req, res) => {
           // Düzenlenebilir alanları input'a çevir
           document.getElementById("field-mac").innerHTML = '<input type="text" id="edit-mac" value="' + originalData.mac + '" style="width: 100%; padding: 4px;" />';
           document.getElementById("field-serialNumber").innerHTML = '<input type="text" id="edit-serialNumber" value="' + originalData.serialNumber + '" style="width: 100%; padding: 4px;" />';
-          document.getElementById("field-productionYear").innerHTML = '<input type="text" id="edit-productionYear" value="' + originalData.productionYear + '" style="width: 100%; padding: 4px;" />';
+          document.getElementById("field-emergencyPhone").innerHTML = '<input type="tel" id="edit-emergencyPhone" value="' + originalData.emergencyPhone + '" placeholder="+90 XXX XXX XX XX" style="width: 100%; padding: 4px;" />';
           document.getElementById("field-model").innerHTML = '<input type="text" id="edit-model" value="' + originalData.model + '" style="width: 100%; padding: 4px;" />';
           document.getElementById("field-location").innerHTML = '<input type="text" id="edit-location" value="' + originalData.location + '" style="width: 100%; padding: 4px;" />';
           document.getElementById("field-status").innerHTML = '<select id="edit-status" style="width: 100%; padding: 4px;"><option value="active">active</option><option value="inactive">inactive</option><option value="faulty">faulty</option><option value="maintenance">maintenance</option></select>';
@@ -422,7 +422,7 @@ app.get('/:id', (req, res) => {
           // Input'ları geri text'e çevir
           document.getElementById("field-mac").textContent = originalData.mac;
           document.getElementById("field-serialNumber").textContent = originalData.serialNumber;
-          document.getElementById("field-productionYear").textContent = originalData.productionYear;
+          document.getElementById("field-emergencyPhone").textContent = originalData.emergencyPhone;
           document.getElementById("field-model").textContent = originalData.model;
           document.getElementById("field-location").textContent = originalData.location;
           document.getElementById("field-status").textContent = originalData.status;
@@ -460,7 +460,7 @@ app.get('/:id', (req, res) => {
           var updatePayload = {
             mac: document.getElementById("edit-mac").value,
             serialNumber: document.getElementById("edit-serialNumber").value,
-            productionYear: document.getElementById("edit-productionYear").value,
+            emergencyPhone: document.getElementById("edit-emergencyPhone").value,
             model: document.getElementById("edit-model").value,
             location: document.getElementById("edit-location").value,
             status: document.getElementById("edit-status").value,
@@ -536,7 +536,7 @@ app.get('/:id', (req, res) => {
             document.getElementById("field-id").textContent = ap.id || "";
             document.getElementById("field-mac").textContent = ap.mac || "";
             document.getElementById("field-serialNumber").textContent = ap.serialNumber || "";
-            document.getElementById("field-productionYear").textContent = ap.productionYear || "";
+            document.getElementById("field-emergencyPhone").textContent = ap.emergencyPhone || "";
             document.getElementById("field-model").textContent = ap.model || "";
             document.getElementById("field-location").textContent = ap.location || "";
             document.getElementById("field-status").textContent = ap.status || "";
@@ -552,7 +552,7 @@ app.get('/:id', (req, res) => {
               id: ap.id || "",
               mac: ap.mac || "",
               serialNumber: ap.serialNumber || "",
-              productionYear: ap.productionYear || "",
+              emergencyPhone: ap.emergencyPhone || "",
               model: ap.model || "",
               location: ap.location || "",
               status: ap.status || "",

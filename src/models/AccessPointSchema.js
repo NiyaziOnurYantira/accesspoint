@@ -31,11 +31,18 @@ const AccessPointSchema = new Schema(
       trim: true,
     },
 
-    // Üretim yılı
-    productionYear: {
+    // Arıza durumunda aranacak numara
+    emergencyPhone: {
       type: String,
       required: true,
       trim: true,
+      validate: {
+        validator: function(v) {
+          // Basit telefon numarası validasyonu
+          return /^[\+]?[0-9\s\-\(\)]{7,20}$/.test(v);
+        },
+        message: 'Geçerli bir telefon numarası giriniz'
+      }
     },
 
     // Model adı / kodu

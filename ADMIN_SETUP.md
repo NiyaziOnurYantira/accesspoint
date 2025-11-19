@@ -15,6 +15,7 @@ node src/utils/setupAdmin.js
 ```
 
 Bu komut varsayılan admin bilgileriyle bir admin oluşturacak:
+
 - **Kullanıcı Adı:** `admin`
 - **Şifre:** `admin123`
 - **Email:** `admin@accesspoint.com`
@@ -32,6 +33,7 @@ node server.js
 ### Admin İşlemleri
 
 #### Admin Oluşturma
+
 ```http
 POST /api/admin/create
 Content-Type: application/json
@@ -44,6 +46,7 @@ Content-Type: application/json
 ```
 
 #### Admin Girişi
+
 ```http
 POST /api/admin/login
 Content-Type: application/json
@@ -55,6 +58,7 @@ Content-Type: application/json
 ```
 
 #### Adminleri Listeleme
+
 ```http
 GET /api/admin/list
 ```
@@ -62,6 +66,7 @@ GET /api/admin/list
 ### Access Point İşlemleri (Admin Doğrulamalı)
 
 #### Yeni Access Point Oluşturma (Admin Doğrulamalı)
+
 ```http
 POST /api/admin/access-points
 Content-Type: application/json
@@ -69,7 +74,7 @@ Content-Type: application/json
 {
   "mac": "AA:BB:CC:DD:EE:FF",
   "serialNumber": "SN123456",
-  "productionYear": "2024",
+  "emergencyPhone": "+90 555 123 45 67",
   "model": "AP-X1000",
   "location": "Istanbul Ofis",
   "status": "active",
@@ -79,6 +84,7 @@ Content-Type: application/json
 ```
 
 #### Access Point Güncelleme (Admin Doğrulamalı)
+
 ```http
 PUT /api/admin/access-points/:id
 Content-Type: application/json
@@ -86,7 +92,7 @@ Content-Type: application/json
 {
   "mac": "AA:BB:CC:DD:EE:FF",
   "serialNumber": "SN123456",
-  "productionYear": "2024",
+  "emergencyPhone": "+90 555 987 65 43",
   "model": "AP-X2000",
   "location": "Ankara Ofis",
   "status": "maintenance",
@@ -96,6 +102,7 @@ Content-Type: application/json
 ```
 
 #### Access Point Silme (Admin Doğrulamalı)
+
 ```http
 DELETE /api/admin/access-points/:id
 Content-Type: application/json
@@ -114,7 +121,7 @@ Bu endpoint'ler geriye uyumluluk için korunmuştur:
 # Access Point görüntüleme
 GET /api/access-points/:id
 
-# Tüm Access Point'leri listeleme  
+# Tüm Access Point'leri listeleme
 GET /api/access-points
 
 # Access Point oluşturma (admin doğrulaması yok)
@@ -134,6 +141,7 @@ PUT /api/access-points/:id
 ## 🛠️ Örnek Kullanım Senaryoları
 
 ### Senaryo 1: İlk Kurulum
+
 ```bash
 # 1. İlk admin'i oluştur
 node src/utils/setupAdmin.js
@@ -148,12 +156,13 @@ curl -X POST http://localhost:3000/api/admin/login \
 ```
 
 ### Senaryo 2: Admin Doğrulamalı Access Point Oluşturma
+
 ```bash
 curl -X POST http://localhost:3000/api/admin/access-points \
   -H "Content-Type: application/json" \
   -d '{
     "mac": "AA:BB:CC:DD:EE:FF",
-    "serialNumber": "SN123456", 
+    "serialNumber": "SN123456",
     "productionYear": "2024",
     "model": "AP-X1000",
     "location": "Istanbul Ofis",
@@ -164,12 +173,13 @@ curl -X POST http://localhost:3000/api/admin/access-points \
 ```
 
 ### Senaryo 3: Access Point Güncelleme
+
 ```bash
 curl -X PUT http://localhost:3000/api/admin/access-points/your-access-point-id \
   -H "Content-Type: application/json" \
   -d '{
     "location": "Yeni Lokasyon",
-    "status": "maintenance", 
+    "status": "maintenance",
     "adminUsername": "admin",
     "adminPassword": "admin123"
   }'
@@ -187,16 +197,20 @@ curl -X PUT http://localhost:3000/api/admin/access-points/your-access-point-id \
 ### Yaygın Hatalar
 
 **"Admin doğrulaması için kullanıcı adı ve şifre gerekli"**
+
 - `adminUsername` ve `adminPassword` alanlarını request body'ye eklemeyi unutmuş olabilirsiniz
 
 **"Geçersiz admin bilgileri"**
+
 - Kullanıcı adı veya şifre yanlış
 - Admin hesabı deaktif olmuş olabilir
 
 **"Bu kullanıcı adı ile admin zaten mevcut"**
+
 - Aynı kullanıcı adıyla admin oluşturmaya çalışıyorsunuz
 
 ### Debug Modunda Çalıştırma
+
 ```bash
 DEBUG=* node server.js
 ```
