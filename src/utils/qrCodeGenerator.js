@@ -14,7 +14,7 @@ export const generateAccessPointQr = async (id) => {
     throw new Error('QR oluşturmak için geçerli bir id gerekli');
   }
 
-  const url = `http://localhost:3002/${id}`;
+  const url = `https://honourservices.xyz/${id}`;
 
   // İsterseniz ayarları özelleştirebilirsiniz
   const options = {
