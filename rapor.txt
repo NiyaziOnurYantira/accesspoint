@@ -1,0 +1,389 @@
+═══════════════════════════════════════════════════════════════════════════════
+                        ACCESS POINT YÖNETİM SİSTEMİ
+                              PROJE RAPORU
+═══════════════════════════════════════════════════════════════════════════════
+
+RAPOR TARİHİ: 21 Kasım 2025
+PROJE SAHIBI: AyminaGundogdu
+PROJE VERSIYONU: 1.0.0
+
+
+1. PROJE ÖZETİ
+═══════════════════════════════════════════════════════════════════════════════
+
+Access Point Yönetim Sistemi, kablosuz erişim noktalarının (Access Point) 
+kaydını, takibini ve yönetimini sağlayan kapsamlı bir web tabanlı uygulamadır. 
+Sistem, access point cihazlarının tüm detaylarını (MAC adresi, seri numarası, 
+lokasyon, durum bilgisi vb.) merkezi bir veritabanında saklar ve QR kod 
+oluşturma özelliği ile fiziksel cihazların hızlı tanımlanmasını sağlar.
+
+
+2. TEKNOLOJİ STACK'İ
+═══════════════════════════════════════════════════════════════════════════════
+
+BACKEND TEKNOLOJİLERİ:
+  • Node.js (ES6 Modules)
+  • Express.js v5.1.0 - Web framework
+  • MongoDB - NoSQL veritabanı
+  • Mongoose v8.20.0 - ODM (Object Data Modeling)
+
+GÜVENLİK:
+  • bcryptjs v2.4.3 - Şifre hashleme
+  • CORS v2.8.5 - Cross-Origin Resource Sharing
+
+FRONTEND & VIEW:
+  • EJS v3.1.10 - Embedded JavaScript templating
+  • Vanilla HTML/CSS/JavaScript
+  
+YARDIMCI KÜTÜPHANELER:
+  • qrcode v1.5.4 - QR kod üretimi
+  • uuid v13.0.0 - Benzersiz ID oluşturma
+
+
+3. MİMARİ YAPISI
+═══════════════════════════════════════════════════════════════════════════════
+
+Proje, modern MVC (Model-View-Controller) mimarisini takip etmektedir:
+
+PROJECT STRUCTURE:
+├── server.js                    # Ana sunucu dosyası
+├── package.json                 # Proje bağımlılıkları
+├── ADMIN_SETUP.md              # Admin kurulum dokümantasyonu
+│
+└── src/
+    ├── config/
+    │   └── config.js           # Sunucu ve MongoDB konfigürasyonu
+    │
+    ├── database/
+    │   └── mongoDBConnection.js # MongoDB bağlantı yönetimi
+    │
+    ├── models/
+    │   ├── AccessPointSchema.js # Access Point veri modeli
+    │   └── AdminSchema.js      # Admin kullanıcı veri modeli
+    │
+    ├── controller/
+    │   ├── accessPointController.js # Access Point işlem mantığı
+    │   ├── adminController.js      # Admin yetkilendirme mantığı
+    │   └── viewController.js       # View rendering kontrolü
+    │
+    ├── routes/
+    │   ├── accessPointRoutes.js # Access Point API rotaları
+    │   ├── adminRoutes.js      # Admin API rotaları
+    │   └── viewRoutes.js       # Web sayfası rotaları
+    │
+    ├── views/
+    │   ├── accessPointDetail.ejs # Access Point detay sayfası
+    │   └── newAccessPoint.ejs    # Yeni Access Point oluşturma formu
+    │
+    └── utils/
+        ├── setupAdmin.js       # İlk admin kurulum scripti
+        ├── qrCodeGenerator.js  # QR kod üretici
+        └── migrateProductionYearToEmergencyPhone.js # Veri migrasyon aracı
+
+
+4. VERİTABANI MODELLERİ
+═══════════════════════════════════════════════════════════════════════════════
+
+4.1. ACCESS POINT SCHEMA
+-------------------------
+• id: String (Benzersiz UUID)
+• mac: String (MAC adresi - benzersiz, büyük harf)
+• serialNumber: String (Seri numarası - benzersiz)
+• emergencyPhone: String (Acil durum telefon numarası - validasyonlu)
+• model: String (Cihaz model bilgisi)
+• location: String (Fiziksel lokasyon bilgisi)
+• status: Enum ["active", "inactive", "faulty", "maintenance"]
+• createdAt: Date (Otomatik)
+• updatedAt: Date (Otomatik)
+
+Özel Özellikler:
+  - MAC adresi ve seri numarası üzerinde index
+  - Telefon numarası format validasyonu (regex ile)
+  - Timestamps otomatik yönetimi
+
+4.2. ADMIN SCHEMA
+-----------------
+• username: String (Benzersiz, 3-50 karakter)
+• password: String (Hashlenmiş, min 6 karakter)
+• email: String (Opsiyonel, benzersiz)
+• isActive: Boolean (Varsayılan: true)
+• createdAt: Date (Otomatik)
+• updatedAt: Date (Otomatik)
+
+Özel Özellikler:
+  - Pre-save hook ile otomatik şifre hashleme (bcrypt, salt:12)
+  - comparePassword() metodu ile şifre doğrulama
+  - Username üzerinde index
+
+
+5. API ENDPOİNTLERİ
+═══════════════════════════════════════════════════════════════════════════════
+
+5.1. GENEL ACCESS POINT ENDPOİNTLERİ (Admin Doğrulaması Yok)
+------------------------------------------------------------
+[GET]    /api/access-points          → Tüm access point'leri listele
+[GET]    /api/access-points/:id      → Belirli bir access point getir
+[POST]   /api/access-points          → Yeni access point oluştur
+[PUT]    /api/access-points/:id      → Access point güncelle
+
+5.2. ADMİN KORUNUMLU ACCESS POINT ENDPOİNTLERİ
+----------------------------------------------
+[POST]   /api/admin/access-points    → Yeni access point oluştur (admin auth)
+[PUT]    /api/admin/access-points/:id → Access point güncelle (admin auth)
+[DELETE] /api/admin/access-points/:id → Access point sil (admin auth)
+
+5.3. ADMİN YÖNETİMİ ENDPOİNTLERİ
+--------------------------------
+[POST]   /api/admin/create           → Yeni admin oluştur
+[POST]   /api/admin/login            → Admin girişi
+[GET]    /api/admin/list             → Tüm adminleri listele
+
+5.4. WEB SAYFASI ROTALARI
+-------------------------
+[GET]    /                           → Ana sayfa
+[GET]    /new                        → Yeni access point oluşturma formu
+[GET]    /detail/:id                 → Access point detay sayfası
+
+
+6. GÜVENLİK ÖZELLİKLERİ
+═══════════════════════════════════════════════════════════════════════════════
+
+✓ ŞİFRE GÜVENLİĞİ
+  - Tüm şifreler bcryptjs ile hashlenir (salt rounds: 12)
+  - Şifreler asla düz metin olarak saklanmaz
+  - Pre-save hook ile otomatik hashleme
+
+✓ ADMİN DOĞRULAMA
+  - Kritik işlemler için admin kullanıcı adı ve şifre gerektirir
+  - verifyAdmin middleware ile endpoint koruması
+  - Her işlemde admin bilgileri doğrulanır
+
+✓ GERİYE UYUMLULUK
+  - Eski API endpoint'leri korunmuştur
+  - /api/access-points rotaları admin doğrulaması gerektirmez
+  - Yeni sistemde /api/admin/* rotaları korumalıdır
+
+✓ CORS YÖNETİMİ
+  - Cross-origin istekler için CORS desteği
+
+
+7. TEMEL ÖZELLİKLER
+═══════════════════════════════════════════════════════════════════════════════
+
+7.1. ACCESS POINT YÖNETİMİ
+---------------------------
+• Yeni access point ekleme
+• Mevcut access point'leri güncelleme
+• Access point silme (admin yetkisi gerekli)
+• Access point detaylarını görüntüleme
+• Tüm access point'leri listeleme
+• Durum takibi (active, inactive, faulty, maintenance)
+
+7.2. QR KOD OLUŞTURMA
+---------------------
+• Her access point için otomatik QR kod üretimi
+• QR kod ile hızlı cihaz tanımlama
+• Base64 formatında QR kod döndürme
+
+7.3. ADMİN YÖNETİMİ
+-------------------
+• Çoklu admin hesabı desteği
+• Admin oluşturma ve yönetme
+• Güvenli admin girişi
+• Admin yetkisi kontrolü
+
+7.4. VERİ DOĞRULAMA
+-------------------
+• MAC adresi benzersizlik kontrolü
+• Seri numarası benzersizlik kontrolü
+• Telefon numarası format validasyonu
+• Gerekli alan kontrolü
+• Mongoose schema validasyonu
+
+
+8. KURULUM VE ÇALIŞTIRMA
+═══════════════════════════════════════════════════════════════════════════════
+
+8.1. GEREKSİNİMLER
+------------------
+✓ Node.js (ES6 modules desteği)
+✓ MongoDB (yerel veya cloud)
+✓ npm veya yarn
+
+8.2. KURULUM ADIMLARI
+---------------------
+1. Bağımlılıkları yükleyin:
+   $ npm install
+
+2. MongoDB'nin çalıştığından emin olun
+
+3. İlk admin kullanıcısını oluşturun:
+   $ npm run setup-admin
+   
+   Varsayılan admin bilgileri:
+   - Kullanıcı adı: admin
+   - Şifre: admin123
+   - Email: admin@accesspoint.com
+
+4. Sunucuyu başlatın:
+   $ npm start
+   
+   Sunucu http://localhost:3002 adresinde çalışacaktır
+
+8.3. NPM SCRİPTLERİ
+-------------------
+• npm start                → Sunucuyu başlatır
+• npm run setup-admin      → İlk admin oluşturur
+• npm run migrate          → Veri migrasyon aracını çalıştırır
+
+
+9. KONFIGURASYON
+═══════════════════════════════════════════════════════════════════════════════
+
+SERVER AYARLARI (src/config/config.js):
+  • PORT: 3002
+  • MongoDB URI: mongodb://localhost:27017/accesspoint
+
+Bu ayarlar ihtiyaca göre değiştirilebilir.
+
+
+10. KULLANIM ÖRNEKLERİ
+═══════════════════════════════════════════════════════════════════════════════
+
+10.1. YENİ ACCESS POINT OLUŞTURMA (Admin doğrulamalı)
+-----------------------------------------------------
+POST http://localhost:3002/api/admin/access-points
+Content-Type: application/json
+
+{
+  "mac": "AA:BB:CC:DD:EE:FF",
+  "serialNumber": "SN123456",
+  "emergencyPhone": "+90 555 123 45 67",
+  "model": "AP-X1000",
+  "location": "Istanbul Ofis 3. Kat",
+  "status": "active",
+  "adminUsername": "admin",
+  "adminPassword": "admin123"
+}
+
+10.2. ACCESS POINT SORGULAMA
+-----------------------------
+GET http://localhost:3002/api/access-points/{id}
+
+Response:
+{
+  "accessPoint": {
+    "id": "uuid-burada",
+    "mac": "AA:BB:CC:DD:EE:FF",
+    "serialNumber": "SN123456",
+    ...
+  },
+  "qrCode": "data:image/png;base64,..."
+}
+
+10.3. ADMIN GİRİŞİ
+------------------
+POST http://localhost:3002/api/admin/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+
+11. ÖNEMLİ NOTLAR VE TAVSİYELER
+═══════════════════════════════════════════════════════════════════════════════
+
+⚠️ GÜVENLİK:
+  • Varsayılan admin123 şifresini mutlaka değiştirin!
+  • Üretim ortamında HTTPS kullanın
+  • Hassas bilgileri environment variable olarak saklayın
+
+⚠️ VERİTABANI:
+  • Düzenli yedekleme yapın
+  • Index'ler performans için optimize edilmiştir
+  • MongoDB connection string'i güvenli tutun
+
+⚠️ GERİYE UYUMLULUK:
+  • Eski /api/access-points endpoint'leri korunmuştur
+  • Yeni projeler için /api/admin/* endpoint'lerini kullanın
+  • Migration script'i ile veri dönüşümleri yapılabilir
+
+
+12. VERİ MİGRASYONU
+═══════════════════════════════════════════════════════════════════════════════
+
+Proje, "productionYear" alanından "emergencyPhone" alanına geçiş için bir 
+migration script içermektedir:
+
+$ npm run migrate
+
+Bu script, eski veri yapısından yeni yapıya geçişi sağlar.
+
+
+13. HATA AYIKLAMA
+═══════════════════════════════════════════════════════════════════════════════
+
+YAYGIN HATALAR:
+
+1. "Admin doğrulaması için kullanıcı adı ve şifre gerekli"
+   → adminUsername ve adminPassword body'ye eklenmelidir
+
+2. "Geçersiz admin bilgileri"
+   → Kullanıcı adı veya şifre yanlış
+   → Admin hesabı deaktif olabilir
+
+3. "Bu kullanıcı adı ile admin zaten mevcut"
+   → Aynı username ile yeni admin oluşturulamaz
+
+4. MongoDB bağlantı hatası
+   → MongoDB servisinin çalıştığından emin olun
+   → Connection string'i kontrol edin
+
+
+14. PROJE DURUMU
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ TAMAMLANAN ÖZELLİKLER:
+  • Access Point CRUD işlemleri
+  • Admin yetkilendirme sistemi
+  • QR kod üretimi
+  • MongoDB entegrasyonu
+  • REST API endpoint'leri
+  • Web arayüzü (EJS templates)
+  • Veri validasyonu
+  • Şifre güvenliği
+  • Migration desteği
+
+🎯 POTANSİYEL GELİŞTİRMELER:
+  • JWT token tabanlı authentication
+  • Role-based access control (RBAC)
+  • API rate limiting
+  • Detaylı logging sistemi
+  • Arama ve filtreleme özellikleri
+  • Toplu access point ekleme (bulk import)
+  • Export/Import işlemleri (CSV, Excel)
+  • Dashboard ve istatistikler
+  • Email bildirimleri
+  • Cihaz geçmişi takibi
+
+
+15. SONUÇ
+═══════════════════════════════════════════════════════════════════════════════
+
+Access Point Yönetim Sistemi, kablosuz erişim noktalarının merkezi olarak 
+yönetilmesi için geliştirilmiş, güvenli ve ölçeklenebilir bir web uygulamasıdır. 
+
+Modern teknolojiler kullanılarak geliştirilmiş olan sistem, hem API hem de web 
+arayüzü ile kullanıma sunulmuştur. Admin yetkilendirme sistemi ile kritik 
+işlemler korunurken, geriye uyumluluk sağlanarak mevcut entegrasyonlar 
+bozulmamıştır.
+
+Proje, MVC mimarisi ile düzenli bir kod yapısına sahiptir ve kolayca 
+genişletilebilir bir altyapı sunmaktadır.
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                              RAPOR SONU
+═══════════════════════════════════════════════════════════════════════════════
